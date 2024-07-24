@@ -1,47 +1,48 @@
 "use client"
 
-import Image from "next/image"
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useForm, SubmitHandler } from "react-hook-form"
-import Button from "./components/button"
-import Input from "./components/input"
-import { useState } from "react"
-import {
-  signInWithEmailAndPassword
-  
-} from "firebase/auth"
-import { auth } from "../firebase"
+import { useForm, SubmitHandler } from "react-hook-form";
+import Button from "../components/button";
+import Input from "../components/input";
+import { useState } from "react";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../../firebase"
 
 interface FormData {
-  email: string
-  password: string
+  email: string;
+  password: string;
+  confirmPassword: string;
 }
 
-const Login = () => {
+const SignUp = () => {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<FormData>()
+  const password = watch("password", "")
   const [serverError, setServerError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-   const router = useRouter()
+  const router = useRouter()
+ 
  
 
   const onSubmit: SubmitHandler<FormData> = async (data) => {
     setIsLoading(true)
     setServerError(null)
     try {
-      const userCredential = await signInWithEmailAndPassword(
+      await createUserWithEmailAndPassword(
         auth,
         data.email,
         data.password
-      )
-      const user = userCredential.user
-      console.log("User signed in:", user)
-     router.push('/Dashboard');
+      ).then((userCredential) => {
+        const user = userCredential.user
+      })
+      router.push('/Login');
     } catch (error) {
-      setServerError((error as Error).message)
+     setServerError((error as Error).message)
     } finally {
       setIsLoading(false)
     }
@@ -49,12 +50,12 @@ const Login = () => {
 
   return (
     <div className="w-full relative bg-light-grey h-[984px] overflow-hidden text-left text-[14px] text-white font-gotham-bold">
-      <div className="absolute top-[273px] left-[160px] rounded-[112px] bg-gray hidden flex-row items-center justify-center py-5 px-8">
+      <div className="absolute top-[243px] left-[160px] rounded-[112px] bg-gray hidden flex-row items-center justify-center py-5 px-8">
         {/* <div className="relative tracking-[0.05em] leading-[140%] uppercase">
           tutustu koko tarinaamme
         </div> */}
       </div>
-      <div className="absolute top-[calc(50%_-_300px)] left-[calc(50%_-_238px)] flex flex-col items-center justify-start gap-[51px] text-13xl text-dark-grey font-heading-s">
+      <div className="absolute top-[calc(50%_-_360px)] left-[calc(50%_-_238px)] flex flex-col items-center justify-start gap-[51px] text-13xl text-dark-grey font-heading-s">
         <div className="w-[182.5px] relative h-10">
           <Image
             src="/logo-icon.svg"
@@ -76,9 +77,11 @@ const Login = () => {
         <div className="w-[476px] rounded-xl bg-white overflow-hidden flex flex-col items-start justify-start">
           <div className="self-stretch overflow-hidden flex flex-col items-start justify-start p-10 gap-[40px]">
             <div className="self-stretch flex flex-col items-start justify-start gap-[8px]">
-              <b className="self-stretch relative leading-[150%]">Login</b>
+              <b className="self-stretch relative leading-[150%]">
+                Create Account
+              </b>
               <div className="self-stretch relative text-base leading-[150%] text-grey">
-                Add your details below to get back into the app
+                {"Let's get you started sharing your links"}
               </div>
             </div>
             <form
@@ -112,7 +115,7 @@ const Login = () => {
               </div>
               <div className="flex flex-col items-start justify-start gap-[4px]">
                 <label className="w-[396px] relative leading-[150%] inline-block">
-                  Password
+                  Create Password
                   <div className="self-stretch rounded-lg bg-white overflow-hidden flex flex-row items-center justify-start py-3 px-4 gap-[12px] text-base border-[1px] border-solid border-borders">
                     <Image
                       src="/password-icon.svg"
@@ -125,11 +128,15 @@ const Login = () => {
                     <Input
                       {...register("password", {
                         required: "Password is required",
+                        minLength: {
+                          value: 8,
+                          message: "Password must be at least 8 characters",
+                        },
                       })}
                       id="password"
                       type="password"
                       className="flex-grow"
-                      placeholder="Enter your password"
+                      placeholder="At least 8 characters"
                     />
                   </div>
                   {errors.password && (
@@ -137,18 +144,52 @@ const Login = () => {
                   )}
                 </label>
               </div>
+              <div className="flex flex-col items-start justify-start gap-[4px]">
+                <label className="w-[396px] relative leading-[150%] inline-block">
+                  Confirm Password
+                  <div className="self-stretch rounded-lg bg-white overflow-hidden flex flex-row items-center justify-start py-3 px-4 gap-[12px] text-base border-[1px] border-solid border-borders">
+                    <Image
+                      src="/password-icon.svg"
+                      alt="Password Logo"
+                      className="w-4 relative h-4 overflow-hidden shrink-0"
+                      width={100}
+                      height={24}
+                      priority
+                    />
+                    <Input
+                      {...register("confirmPassword", {
+                        required: "Please confirm your password",
+                        validate: (value) =>
+                          value === password || "Passwords do not match",
+                      })}
+                      id="confirmPassword"
+                      type="password"
+                      className="flex-grow"
+                      placeholder="At least 8 characters"
+                    />
+                  </div>
+                  {errors.confirmPassword && (
+                    <p className="text-red-500">
+                      {errors.confirmPassword.message}
+                    </p>
+                  )}
+                </label>
+                <p className="mt-5 text-gray-400">
+                  Password must contain at least 8 characters
+                </p>
+              </div>
               {serverError && <p className="text-red-500">{serverError}</p>}
               <Button
                 type="submit"
                 className="self-stretch bg-purple hover:bg-[#b8a7fc] text-base text-white leading-[150%] font-semibold"
                 disabled={isLoading}
               >
-                {isLoading ? "Logging in..." : "Login"}
+                {isLoading ? "Signing Up..." : "Sign Up"}
               </Button>
             </form>
             <div className="self-stretch relative text-base leading-[150%] text-center text-grey">
-              <span>{`Don’t have an account? `}</span>
-              <span className="text-purple">Create account</span>
+              <span>{`Already have an account? `}</span>
+              <span className="text-purple">Login</span>
             </div>
           </div>
         </div>
@@ -157,4 +198,4 @@ const Login = () => {
   )
 }
 
-export default Login
+export default SignUp;
